@@ -1,0 +1,123 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  user_id         Int      @id @default(autoincrement())
+  google_id       String?  @unique
+  name            String
+  email           String   @unique
+  profile_picture String?
+  status          UserStatus @default(ACTIVE)
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  // Relations
+  fraud_reports   FraudReport[]
+  refresh_tokens  RefreshToken[]
+
+  @@map("users")
+}
+
+model Admin {
+  admin_id     Int      @id @default(autoincrement())
+  username     String   @unique
+  password_hash String
+  role         AdminRole @default(MODERATOR)
+  last_login   DateTime?
+  created_at   DateTime @default(now())
+
+  // Relations
+  approved_reports FraudReport[]
+
+  @@map("admins")
+}
+
+model FraudReport {
+  report_id       Int           @id @default(autoincrement())
+  user_id         Int
+  email           String?
+  phone           String?
+  facebook_id     String?
+  description     String
+  status          ReportStatus  @default(PENDING)
+  rejection_reason String?
+  created_at      DateTime      @default(now())
+  approved_at     DateTime?
+  approved_by     Int?
+
+  // Relations
+  user            User          @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  admin           Admin?        @relation(fields: [approved_by], references: [admin_id])
+  report_images   ReportImage[]
+
+  @@map("fraud_reports")
+}
+
+model ReportImage {
+  image_id      Int      @id @default(autoincrement())
+  report_id     Int
+  image_filename String
+  image_path    String
+  image_size    Int
+  uploaded_at   DateTime @default(now())
+
+  // Relations
+  fraud_report  FraudReport @relation(fields: [report_id], references: [report_id], onDelete: Cascade)
+
+  @@map("report_images")
+}
+
+model RefreshToken {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  token      String   @unique
+  expires_at DateTime
+  created_at DateTime @default(now())
+
+  // Relations
+  user       User     @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+model LanguageContent {
+  content_id   Int      @id @default(autoincrement())
+  content_key  String
+  language     Language
+  content_value String
+
+  @@unique([content_key, language])
+  @@map("language_content")
+}
+
+// Enums
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum AdminRole {
+  SUPER_ADMIN
+  MODERATOR
+}
+
+
+enum ReportStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum Language {
+  EN
+  BN
+}
