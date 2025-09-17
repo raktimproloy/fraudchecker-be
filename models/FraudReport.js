@@ -217,7 +217,7 @@ class FraudReport {
 
       const whereConditions = {};
       
-      if (status) {
+      if (status && status.toUpperCase() !== 'ALL') {
         whereConditions.status = status.toUpperCase();
       }
       
